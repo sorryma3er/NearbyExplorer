@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,11 +19,38 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final pwdController = TextEditingController();
 
-  void _onPressedLogin() {
+  Future<void> _onPressedLogin() async{
     final email = emailController.text;
     final pwd = pwdController.text;
-    //TODO: cooperate with firebase
     debugPrint('Login pressed: email: $email, pwd: $pwd');
+
+    try {
+      FirebaseAuth _auth = FirebaseAuth.instance;
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: pwd,
+      );
+      debugPrint('Login success: ${userCredential.user}');
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Wrong password provided for that user.';
+      } else {
+        errorMessage = 'Login failed: ${e.message}';
+      }
+      if (!mounted) return;
+      _showMessage(context, errorMessage);
+    }
+  }
+
+  /// helper func to show error message when login failed
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override

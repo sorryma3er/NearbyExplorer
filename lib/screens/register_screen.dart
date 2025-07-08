@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,11 +15,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final pwdController = TextEditingController();
 
-  void onPressedRegister() {
+  Future<void> onPressedRegister() async{
     final email = emailController.text;
     final pwd = pwdController.text;
-    //TODO: cooperate with firebase
     debugPrint('Register pressed: email: $email, pwd: $pwd');
+
+    try {
+      FirebaseAuth _auth = FirebaseAuth.instance;
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: pwd,
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      if (e.code == 'email-already-in-use') {
+        errorMessage = 'The account already exists for that email.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is badly formatted.';
+      } else {
+        errorMessage = 'Register failed: ${e.message}';
+      }
+      if (!mounted) return;
+      _showMessage(context, errorMessage);
+    }
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
