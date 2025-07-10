@@ -26,6 +26,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: email,
         password: pwd,
       );
+      // on success
+      if (!mounted) return;
+      _showMessage(context, 'Account created for ${userCredential.user?.email}');
+
+      // redirect to login page with email filled in
+      Navigator.pop(context, email);
+
     } on FirebaseAuthException catch (e) {
       String errorMessage;
 

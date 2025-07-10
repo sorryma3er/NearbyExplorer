@@ -30,7 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: pwd,
       );
-      debugPrint('Login success: ${userCredential.user}');
+      // on success
+      if (!mounted) return;
+      _showMessage(context, 'Welcome back! ${userCredential.user?.email}');
+      // TODO redirect to home page
     } on FirebaseAuthException catch (e) {
       String errorMessage;
 
@@ -101,8 +104,19 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 12),
             
             ElevatedButton(
-              onPressed: () => {
-                Navigator.pushNamed(context, '/register'),
+              onPressed: () async {
+                final focusNode = FocusScope.of(context);
+
+                final newEmail = await Navigator.pushNamed(context, '/register');
+
+                // if result is not null, prefill the email for user
+                if (newEmail != null && newEmail is String) {
+                  emailController.text = newEmail;
+                  pwdController.text = ''; // refresh the pwd field
+
+                  // move the focus to password field
+                  focusNode.nextFocus();
+                }
               },
               child: const Text('Don\'t have an account? Register now'),
             ),
