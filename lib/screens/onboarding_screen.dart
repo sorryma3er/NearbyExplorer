@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,14 +64,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
 
             Positioned(
-              bottom: 24, left: 24, right: 24,
+              bottom: 10, left: 24, right: 24,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // prev button
                   if (_currentPage > 0)
                     TextButton(
                       onPressed: () {
-                        _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                        _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                       },
                       child: const Text("Prev"),
                     )
@@ -83,7 +85,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     count: 2,
                     effect: ExpandingDotsEffect(
                       activeDotColor: Colors.lightBlueAccent,
-                      dotColor: Colors.white54,
+                      dotColor: Colors.grey,
                       dotHeight: 8,
                       dotWidth: 8,
                     ),
@@ -125,6 +127,59 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildProfilePage() {
+    final showError = _showProfileError && (_profileInfoComplete == false);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // avatar picker
+          GestureDetector(
+            onTap: pickAvatar,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: showError ? Colors.redAccent : Colors.grey,
+                  width: 2,
+                ),
+
+                image: _avatar == null
+                    ? null
+                    : DecorationImage(
+                  image: FileImage(File(_avatar!.path)),
+                  fit: BoxFit.cover,
+                ),
+
+              ),
+              child: _avatar == null
+                ? const Center(child: Icon(Icons.add_a_photo, size: 32,)) : null
+            ),
+          ),
+
+          const SizedBox(height: 24,),
+
+          // display name field
+          TextField(
+            controller: _displayNameController,
+            decoration: InputDecoration(
+              labelText: 'Display Name',
+              hintText: 'Enter your display name',
+              errorText: showError ? "Display name cannot be empty" : null,
+              border: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: showError ? Colors.redAccent : Colors.grey,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
 
   }
 
@@ -137,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   bool get _profileInfoComplete {
-    return _displayNameController.text.isNotEmpty && _avatar != null;
+    return _displayNameController.text.trim().isNotEmpty && _avatar != null;
   }
 
 }

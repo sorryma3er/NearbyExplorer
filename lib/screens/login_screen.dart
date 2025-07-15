@@ -33,7 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // on success
       if (!mounted) return;
       _showMessage(context, 'Welcome back! ${userCredential.user?.email}');
-      // TODO redirect to home page
+
+      // navigate to onboarding screen
+      Navigator.pushReplacementNamed(context, '/onboarding');
     } on FirebaseAuthException catch (e) {
       String errorMessage;
 

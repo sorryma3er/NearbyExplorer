@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
+import './screens/onboarding_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
       },
     );
   }
