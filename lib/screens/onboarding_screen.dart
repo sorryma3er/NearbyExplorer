@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -39,7 +41,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     
     await prefs.setBool("completeOnboarding", true); // set flag
-    // TODO connect to firebase to set display name and avatar
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint("User is null");
+      return;
+    }
+
+    // handle photo upload and get Url
+    String? photoUrl;
+    if (_avatar != null) {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('avatars/${user.uid}.jpg');
+      final uploadTask = await storageRef.putFile(File(_avatar!.path));
+      photoUrl = await uploadTask.ref.getDownloadURL(); // get the Url from bucket
+    }
+
+    // update Firebase auth profile
+    await user.updateDisplayName(_displayNameController.text.trim());
+    if (photoUrl != null) {
+      await user.updatePhotoURL(photoUrl);
+    }
+    await user.reload(); // refresh the user object
 
     // TODO navigate to home screen
     debugPrint("Navigate to home screen");
