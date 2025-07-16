@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,62 +70,99 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                hintText: 'Enter your email',
-                prefixIcon: Icon(Icons.email),
+      body: Stack(
+        children: [
+          Positioned.fill( // bg pic
+            child: Image.asset('assets/bg3.jpg', fit: BoxFit.cover)
+                .animate().fadeIn(duration: 800.ms, curve: Curves.easeOut),
+          ),
+
+          Positioned(
+            top: 100, left: 30,
+            child: SvgPicture.asset('assets/dec2.svg', width: 140),
+          ).animate(onPlay: (ctrl) => ctrl.forward())
+          .slide(begin: const Offset(-1.0, -1.0), end: Offset.zero, delay: 300.ms)
+          .fade(delay: 300.ms, duration: 600.ms),
+
+          Positioned(
+            top: 120, right: 30,
+            child: SvgPicture.asset('assets/dec3.svg', width: 150),
+          ).animate()
+          .slide(begin: const Offset(0.5, 0), end: Offset.zero, delay: 500.ms)
+          .fade(delay: 500.ms, duration: 500.ms),
+
+          Positioned(
+            bottom: 140, right: 60,
+            child: Image.asset('assets/dec1.png', width: 165),
+          ).animate()
+          .scaleXY(begin: 0.8, end: 1.0, delay: 700.ms, duration: 600.ms)
+          .fadeIn(delay: 700.ms, duration: 600.ms),
+
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.symmetric(horizontal: 32),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Login word
+                  Text('Login', style: Theme.of(context).textTheme.displayMedium)
+                      .animate()
+                      .fadeIn(delay: 900.ms, duration: 400.ms)
+                      .slide(begin: const Offset(0, -0.3), end: Offset.zero, delay: 900.ms),
+
+                  const SizedBox(height: 16),
+
+                  // Email
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                  ).animate().fadeIn(delay: 1100.ms, duration: 400.ms),
+
+                  const SizedBox(height: 12),
+
+                  // Password
+                  TextField(
+                    controller: pwdController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                  ).animate().fadeIn(delay: 1300.ms, duration: 400.ms),
+
+                  const SizedBox(height: 20),
+
+                  // Login button
+                  ElevatedButton(
+                    onPressed: _onPressedLogin,
+                    style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                    child: const Text('Login'),
+                  )
+                      .animate()
+                      .fadeIn(delay: 1500.ms, duration: 400.ms),
+
+                  const SizedBox(height: 12),
+
+                  // Register 链接
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/register'),
+                    child: const Text('Don\'t have an account? Register'),
+                  )
+                      .animate()
+                      .fadeIn(delay: 1700.ms, duration: 400.ms),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: pwdController,
-              obscureText: true, /// make it not visible
-              decoration: InputDecoration(
-                labelText: 'PassWord',
-                hintText: 'Enter your password',
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-            const SizedBox(height: 16,),
-
-            ElevatedButton(
-              onPressed: _onPressedLogin,
-              child: const Text('Login'),
-            ),
-            const SizedBox(height: 12),
-            
-            ElevatedButton(
-              onPressed: () async {
-                final focusNode = FocusScope.of(context);
-
-                final newEmail = await Navigator.pushNamed(context, '/register');
-
-                // if result is not null, prefill the email for user
-                if (newEmail != null && newEmail is String) {
-                  emailController.text = newEmail;
-                  pwdController.text = ''; // refresh the pwd field
-
-                  // move the focus to password field
-                  focusNode.nextFocus();
-                }
-              },
-              child: const Text('Don\'t have an account? Register now'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
