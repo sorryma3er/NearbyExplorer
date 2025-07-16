@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,13 +14,36 @@ class LoginScreen extends StatefulWidget {
   }
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin, RouteAware{
   /// use TextEditingController to give the text field a controller, so that:
   /// enable immediate read & write to it
   /// auto fill after register
   /// have listener that can change widget state when text changes, meaning if the format wrong, maybe surrounding can show red to user
   final emailController = TextEditingController();
   final pwdController = TextEditingController();
+  late final AnimationController _animController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2000)
+    )..forward(); // start initial animation
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    // called when coming back to this screen → replay animation
+    _animController
+      ..reset()
+      ..forward();
+  }
 
   Future<void> _onPressedLogin() async{
     final email = emailController.text;
@@ -62,6 +86,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() { /// comes in pair with Controller, dispose it to avoid memory leak
+    routeObserver.unsubscribe(this);
+    _animController.dispose();
     emailController.dispose();
     pwdController.dispose();
     super.dispose();
@@ -74,44 +100,46 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Positioned.fill( // bg pic
             child: Image.asset('assets/bg3.jpg', fit: BoxFit.cover)
-                .animate().fadeIn(duration: 800.ms, curve: Curves.easeOut),
+                .animate(controller: _animController)
+                .fadeIn(duration: 800.ms, curve: Curves.easeOut),
           ),
 
           Positioned(
-            top: 100, left: 30,
+            top: 90, left: 30,
             child: SvgPicture.asset('assets/dec2.svg', width: 140),
-          ).animate(onPlay: (ctrl) => ctrl.forward())
+          ).animate(controller: _animController)
           .slide(begin: const Offset(-1.0, -1.0), end: Offset.zero, delay: 300.ms)
           .fade(delay: 300.ms, duration: 600.ms),
 
           Positioned(
-            top: 120, right: 30,
+            top: 110, right: 30,
             child: SvgPicture.asset('assets/dec3.svg', width: 150),
-          ).animate()
+          ).animate(controller: _animController)
           .slide(begin: const Offset(0.5, 0), end: Offset.zero, delay: 500.ms)
           .fade(delay: 500.ms, duration: 500.ms),
 
           Positioned(
-            bottom: 140, right: 60,
+            bottom: 130, right: 40,
             child: Image.asset('assets/dec1.png', width: 165),
-          ).animate()
+          ).animate(controller: _animController)
           .scaleXY(begin: 0.8, end: 1.0, delay: 700.ms, duration: 600.ms)
           .fadeIn(delay: 700.ms, duration: 600.ms),
 
+          // login form
           Center(
             child: Container(
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.symmetric(horizontal: 32),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white54,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Login word
-                  Text('Login', style: Theme.of(context).textTheme.displayMedium)
-                      .animate()
+                  Text('Login', style: Theme.of(context).textTheme.titleLarge)
+                      .animate(controller: _animController)
                       .fadeIn(delay: 900.ms, duration: 400.ms)
                       .slide(begin: const Offset(0, -0.3), end: Offset.zero, delay: 900.ms),
 
@@ -124,7 +152,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
                     ),
-                  ).animate().fadeIn(delay: 1100.ms, duration: 400.ms),
+                  )
+                      .animate(controller: _animController)
+                      .fadeIn(delay: 1100.ms, duration: 400.ms),
 
                   const SizedBox(height: 12),
 
@@ -136,7 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock),
                     ),
-                  ).animate().fadeIn(delay: 1300.ms, duration: 400.ms),
+                  )
+                      .animate(controller: _animController)
+                      .fadeIn(delay: 1300.ms, duration: 400.ms),
 
                   const SizedBox(height: 20),
 
@@ -146,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                     child: const Text('Login'),
                   )
-                      .animate()
+                      .animate(controller: _animController)
                       .fadeIn(delay: 1500.ms, duration: 400.ms),
 
                   const SizedBox(height: 12),
@@ -156,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => Navigator.pushNamed(context, '/register'),
                     child: const Text('Don\'t have an account? Register'),
                   )
-                      .animate()
+                      .animate(controller: _animController)
                       .fadeIn(delay: 1700.ms, duration: 400.ms),
                 ],
               ),
