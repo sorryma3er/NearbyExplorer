@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nearby_explorer/screens/register_screen.dart';
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final emailController = TextEditingController();
   final pwdController = TextEditingController();
   late final AnimationController _animController;
+  final emailFocus = FocusNode();
+  final pwdFocus = FocusNode();
 
   @override
   void initState() {
@@ -90,6 +93,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _animController.dispose();
     emailController.dispose();
     pwdController.dispose();
+    emailFocus.dispose();
+    pwdFocus.dispose();
     super.dispose();
   }
 
@@ -105,25 +110,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
 
           Positioned(
-            top: 90, left: 30,
-            child: SvgPicture.asset('assets/dec2.svg', width: 140),
+            top: 120, left: 30,
+            child: Hero(tag: 'dec2', child: SvgPicture.asset('assets/dec2.svg', width: 110)),
           ).animate(controller: _animController)
           .slide(begin: const Offset(-1.0, -1.0), end: Offset.zero, delay: 300.ms)
-          .fade(delay: 300.ms, duration: 600.ms),
+          .fade(delay: 300.ms, duration: 500.ms),
 
           Positioned(
             top: 110, right: 30,
-            child: SvgPicture.asset('assets/dec3.svg', width: 150),
+            child: Hero(tag: 'dec3', child: SvgPicture.asset('assets/dec3.svg', width: 150)),
           ).animate(controller: _animController)
           .slide(begin: const Offset(0.5, 0), end: Offset.zero, delay: 500.ms)
           .fade(delay: 500.ms, duration: 500.ms),
 
           Positioned(
             bottom: 130, right: 40,
-            child: Image.asset('assets/dec1.png', width: 165),
+            child: Hero(tag: 'dec1', child: Image.asset('assets/dec1.png', width: 165)),
           ).animate(controller: _animController)
           .scaleXY(begin: 0.8, end: 1.0, delay: 700.ms, duration: 600.ms)
-          .fadeIn(delay: 700.ms, duration: 600.ms),
+          .fadeIn(delay: 700.ms, duration: 500.ms),
 
           // login form
           Center(
@@ -152,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
                     ),
+                    focusNode: emailFocus,
                   )
                       .animate(controller: _animController)
                       .fadeIn(delay: 1100.ms, duration: 400.ms),
@@ -166,6 +172,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock),
                     ),
+                    focusNode: pwdFocus,
                   )
                       .animate(controller: _animController)
                       .fadeIn(delay: 1300.ms, duration: 400.ms),
@@ -183,10 +190,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
                   const SizedBox(height: 12),
 
-                  // Register 链接
+                  // go to register screen
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/register'),
-                    child: const Text('Don\'t have an account? Register'),
+                    onPressed: () async {
+                      final focus = FocusScope.of(context);
+                      final newEmail = await Navigator.of(context).push<String>(
+                        PageRouteBuilder(
+                          pageBuilder: (_, anim, __) => const RegisterScreen(),
+                          transitionDuration: const Duration(milliseconds: 1000),
+                          reverseTransitionDuration: const Duration(milliseconds: 800),
+                        ),
+                      );
+
+                      // prefill when its not null
+                      if (newEmail != null && newEmail.isNotEmpty) {
+                        emailController.text = newEmail;
+                        pwdController.clear();
+                        // move focus to password field for convenience
+                        focus.requestFocus(pwdFocus);
+                      }
+                    },
+                    child: const Text("Don't have an account? Register"),
                   )
                       .animate(controller: _animController)
                       .fadeIn(delay: 1700.ms, duration: 400.ms),
