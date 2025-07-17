@@ -296,6 +296,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // display name field
               TextField(
                 controller: _displayNameController,
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: 'Display Name',
                   hintText: 'Enter your display name',
@@ -325,7 +326,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   bool get _profileInfoComplete {
-    return _displayNameController.text.trim().isNotEmpty && _avatar != null;
+    bool hasName = _displayNameController.text.trim().isNotEmpty;
+    bool hasAvatar = _avatar != null || _selectedDefIndex != null;
+    return hasName && hasAvatar;
   }
 
   Widget _buildHeaderText(BuildContext context) {
