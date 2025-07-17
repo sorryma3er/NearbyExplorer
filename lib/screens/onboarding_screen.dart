@@ -22,6 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   XFile? _avatar; // store avatar
   int _currentPage = 0;
   bool _showProfileError = false;
+  int? _selectedDefIndex; // index of default avatar list
 
   @override
   void dispose() {
@@ -36,6 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (file != null) {
       setState(() {
         _avatar = file;
+        _selectedDefIndex = null;
       }); // update the avatar
     }
   }
@@ -170,13 +172,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
   }
 
+  // default avatars
+  final List<String> _defaultAvatars = [
+    'assets/default1.png',
+    'assets/default2.png',
+    'assets/default3.png',
+    'assets/default4.png',
+  ];
+
   Widget _buildProfilePage() {
     final showError = _showProfileError && (_profileInfoComplete == false);
+
+    //decide which picture to show in the big circle
+    ImageProvider? bigImage;
+    if (_avatar != null) {
+      bigImage = FileImage(File(_avatar!.path));
+    } else if (_selectedDefIndex != null) {
+      bigImage = AssetImage(_defaultAvatars[_selectedDefIndex!]);
+    }
 
     return Stack(
       children: [
         Positioned(
-          top: 90, left: 40,
+          bottom: 190, left: 25,
           child: SvgPicture.asset('assets/onboard_dec1.svg', width: 160),
         ).animate()
             .slide(begin: const Offset(-1, 0), end: Offset.zero, duration: 500.ms, delay: 300.ms)
@@ -198,58 +216,99 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             .slide(begin: const Offset(0, -0.5), end: Offset.zero, delay: 100.ms)
             .fadeIn(duration: 300.ms, delay: 100.ms),
 
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // avatar picker
-                GestureDetector(
-                  onTap: pickAvatar,
-                  child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: showError ? Colors.redAccent : Colors.grey,
-                          width: 2,
-                        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 150),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // avatar picker
+              GestureDetector(
+                onTap: pickAvatar,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: showError ? Colors.redAccent : Colors.grey,
+                      width: 2,
+                    ),
 
-                        image: _avatar == null
-                            ? null
-                            : DecorationImage(
-                          image: FileImage(File(_avatar!.path)),
-                          fit: BoxFit.cover,
-                        ),
+                    image: bigImage == null
+                        ? null
+                        : DecorationImage(
+                      image: bigImage,
+                      fit: BoxFit.cover,
+                    ),
 
-                      ),
-                      child: _avatar == null
-                          ? const Center(child: Icon(Icons.add_a_photo, size: 32,)) : null
                   ),
-                ).animate()
-                    .fadeIn(delay: 500.ms, duration: 500.ms),
+                  child: bigImage == null
+                      ? const Center(child: Icon(Icons.add_a_photo, size: 32,)) : null,
+                ),
+              ).animate()
+                  .fadeIn(delay: 500.ms, duration: 500.ms),
 
-                const SizedBox(height: 24,),
+              const SizedBox(height: 24,),
 
-                // display name field
-                TextField(
-                  controller: _displayNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Display Name',
-                    hintText: 'Enter your display name',
-                    errorText: showError ? "Display name cannot be empty" : null,
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: showError ? Colors.redAccent : Colors.grey,
-                        width: 2,
+              // row of default avatars
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < _defaultAvatars.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _avatar = null; // clear gallery pick
+                            _selectedDefIndex = i; // mark this one selected
+                            _showProfileError = false; // clear any error
+                          });
+                        },
+                        child: Container(
+                          width: 50, height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _selectedDefIndex == i ? Colors.green : Colors.grey,
+                              width: _selectedDefIndex == i ? 3 : 1.5,
+                            ),
+                            image: DecorationImage(
+                              image: AssetImage(_defaultAvatars[i]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        )
+                        // now animate each circle in:
+                            .animate()
+                            .fadeIn(delay: (i * 200).ms, duration: 500.ms)
+                            .slide(begin: const Offset(-0.3, 0), end: Offset.zero, duration: 500.ms, delay: (i * 200).ms,
+                        ),
                       ),
                     ),
+                ],
+              ),
+
+              const SizedBox(height: 24,),
+
+              // display name field
+              TextField(
+                controller: _displayNameController,
+                decoration: InputDecoration(
+                  labelText: 'Display Name',
+                  hintText: 'Enter your display name',
+                  errorText: showError ? "Display name cannot be empty" : null,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: showError ? Colors.redAccent : Colors.grey,
+                      width: 2,
+                    ),
                   ),
-                ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
-              ],
-            ),
+                ),
+              ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
+            ],
           ),
         ),
       ],
