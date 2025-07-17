@@ -6,6 +6,8 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../constraint.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -73,6 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -170,56 +173,86 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildProfilePage() {
     final showError = _showProfileError && (_profileInfoComplete == false);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // avatar picker
-          GestureDetector(
-            onTap: pickAvatar,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: showError ? Colors.redAccent : Colors.grey,
-                  width: 2,
-                ),
+    return Stack(
+      children: [
+        Positioned(
+          top: 90, left: 40,
+          child: SvgPicture.asset('assets/onboard_dec1.svg', width: 160),
+        ).animate()
+            .slide(begin: const Offset(-1, 0), end: Offset.zero, duration: 500.ms, delay: 300.ms)
+            .fade(duration: 500.ms, delay: 300.ms, curve: Curves.easeInOut),
 
-                image: _avatar == null
-                    ? null
-                    : DecorationImage(
-                  image: FileImage(File(_avatar!.path)),
-                  fit: BoxFit.cover,
-                ),
+        Positioned(
+          bottom: 80, right: 30,
+          child: SvgPicture.asset('assets/onboard_dec2.svg', width: 180),
+        ).animate()
+            .slide(begin: const Offset(1, 0), end: Offset.zero, duration: 500.ms, delay: 300.ms)
+            .fade(duration: 500.ms, delay: 300.ms, curve: Curves.easeInOut),
 
-              ),
-              child: _avatar == null
-                ? const Center(child: Icon(Icons.add_a_photo, size: 32,)) : null
+        Positioned(
+          top: 30,
+          left: 24,
+          right: 24,
+          child: _buildHeaderText(context),
+        ).animate()
+            .slide(begin: const Offset(0, -0.5), end: Offset.zero, delay: 100.ms)
+            .fadeIn(duration: 300.ms, delay: 100.ms),
+
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // avatar picker
+                GestureDetector(
+                  onTap: pickAvatar,
+                  child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: showError ? Colors.redAccent : Colors.grey,
+                          width: 2,
+                        ),
+
+                        image: _avatar == null
+                            ? null
+                            : DecorationImage(
+                          image: FileImage(File(_avatar!.path)),
+                          fit: BoxFit.cover,
+                        ),
+
+                      ),
+                      child: _avatar == null
+                          ? const Center(child: Icon(Icons.add_a_photo, size: 32,)) : null
+                  ),
+                ).animate()
+                    .fadeIn(delay: 500.ms, duration: 500.ms),
+
+                const SizedBox(height: 24,),
+
+                // display name field
+                TextField(
+                  controller: _displayNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Display Name',
+                    hintText: 'Enter your display name',
+                    errorText: showError ? "Display name cannot be empty" : null,
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: showError ? Colors.redAccent : Colors.grey,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
+              ],
             ),
           ),
-
-          const SizedBox(height: 24,),
-
-          // display name field
-          TextField(
-            controller: _displayNameController,
-            decoration: InputDecoration(
-              labelText: 'Display Name',
-              hintText: 'Enter your display name',
-              errorText: showError ? "Display name cannot be empty" : null,
-              border: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: showError ? Colors.redAccent : Colors.grey,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
 
   }
@@ -234,6 +267,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   bool get _profileInfoComplete {
     return _displayNameController.text.trim().isNotEmpty && _avatar != null;
+  }
+
+  Widget _buildHeaderText(BuildContext context) {
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        // build a two‐color gradient shader that spans the full width
+        final shader = LinearGradient(
+          colors: [ Colors.greenAccent, Colors.yellowAccent, Colors.greenAccent ],
+        ).createShader(
+          Rect.fromLTWH(0, 0, constraints.maxWidth, 0),
+        );
+
+        return Text(
+          "Make your profile",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'ComicRelief',
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            foreground: Paint()..shader = shader,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(2, 2),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
 }
