@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../constraint.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -72,73 +73,89 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              onPageChanged: _handlePageViewChanged,
-              physics: _pageScrollPhysics(),
-              children: [
-                _buildProfilePage(),
-
-                // TODO onboarding tutorial
-                Center(child: Text("Tutorial"),)
-              ],
-            ),
-
-            Positioned(
-              bottom: 10, left: 24, right: 24,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+            colors: [
+              kPurpleGray,
+              kCambridge,
+              kMintGreen,
+              kSeaSalt,
+              kApricot,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              PageView(
+                controller: _pageController,
+                onPageChanged: _handlePageViewChanged,
+                physics: _pageScrollPhysics(),
                 children: [
-                  // prev button
-                  if (_currentPage > 0)
-                    TextButton(
-                      onPressed: () {
-                        _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                      },
-                      child: const Text("Prev"),
-                    )
-                  else
-                    const SizedBox(width: 40,),
+                  _buildProfilePage(),
 
-                  // smooth indicator
-                  SmoothPageIndicator(
-                    controller: _pageController,
-                    count: 2,
-                    effect: ExpandingDotsEffect(
-                      activeDotColor: Colors.lightBlueAccent,
-                      dotColor: Colors.grey,
-                      dotHeight: 8,
-                      dotWidth: 8,
-                    ),
-                  ),
-
-                  // next / complete button
-                  TextButton(
-                    onPressed: () {
-                      if (_currentPage == 0) {
-                        if (!_profileInfoComplete) {
-                         setState(() {
-                           _showProfileError = true;
-                         });
-                         return; // short circuit this function
-                        }
-                      }
-
-                      if (_currentPage == 1) {
-                        completeOnboarding();
-                      } else {
-                        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                      }
-                    },
-                    child: Text(_currentPage == 1 ? "Complete" : "Next"),
-                  ),
+                  // TODO onboarding tutorial
+                  Center(child: Text("Tutorial"),)
                 ],
               ),
-            ),
-          ],
+
+              Positioned(
+                bottom: 10, left: 24, right: 24,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // prev button
+                    if (_currentPage > 0)
+                      TextButton(
+                        onPressed: () {
+                          _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                        },
+                        child: const Text("Prev"),
+                      )
+                    else
+                      const SizedBox(width: 40,),
+
+                    // smooth indicator
+                    SmoothPageIndicator(
+                      controller: _pageController,
+                      count: 2,
+                      effect: ExpandingDotsEffect(
+                        activeDotColor: Colors.lightBlueAccent,
+                        dotColor: Colors.grey,
+                        dotHeight: 8,
+                        dotWidth: 8,
+                      ),
+                    ),
+
+                    // next / complete button
+                    TextButton(
+                      onPressed: () {
+                        if (_currentPage == 0) {
+                          if (!_profileInfoComplete) {
+                            setState(() {
+                              _showProfileError = true;
+                            });
+                            return; // short circuit this function
+                          }
+                        }
+
+                        if (_currentPage == 1) {
+                          completeOnboarding();
+                        } else {
+                          _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                        }
+                      },
+                      child: Text(_currentPage == 1 ? "Complete" : "Next"),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
