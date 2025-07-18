@@ -383,7 +383,7 @@ class _ExplorePageState extends State<ExplorePage> {
                     radius: _radius,
                     strokeColor: Colors.blueAccent,
                     strokeWidth: 4,
-                    fillColor: Colors.lightBlueAccent,
+                    fillColor: Colors.lightBlueAccent.withValues(alpha: 0.4),
                   ),
                 },
                 markers: {
