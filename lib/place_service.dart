@@ -34,7 +34,7 @@ class PlaceService {
         'X-Goog-Api-Key': _apiKey,
 
         // include the fields that we want to receive in the response
-        'X-Goog-FieldMask': 'places.displayName, places.formattedAddress, places.geometry, places.rating, places.photos',
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
       },
       body: json.encode(body),
     );
@@ -42,6 +42,7 @@ class PlaceService {
     if (response.statusCode != 200) {
       throw Exception('Nearby Search failed with status code: ${response.statusCode}, body: ${response.body}');
     }
+    print(response.body);
 
     /// parse the response body to a map, 'places' is the key to a list of places maps
     final data = json.decode(response.body) as Map<String, dynamic>;
