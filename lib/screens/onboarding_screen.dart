@@ -9,8 +9,6 @@ import '../constraint.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import './home_screen.dart';
-
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -44,6 +42,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  static const List<String> _defaultAvatarsUrls = [
+    'https://firebasestorage.googleapis.com/v0/b/nearbyexplorer-942ea.firebasestorage.app/o/default_avatars%2Fdefault1.png?alt=media&token=92a30175-1f49-4622-bebc-f001a7f4235b',
+    'https://firebasestorage.googleapis.com/v0/b/nearbyexplorer-942ea.firebasestorage.app/o/default_avatars%2Fdefault2.png?alt=media&token=c5cbb0aa-6fd0-4970-bb23-c5a5d2706ba9',
+    'https://firebasestorage.googleapis.com/v0/b/nearbyexplorer-942ea.firebasestorage.app/o/default_avatars%2Fdefault3.png?alt=media&token=751a96ad-3133-4a0d-8c3c-32e0d4017b80',
+    'https://firebasestorage.googleapis.com/v0/b/nearbyexplorer-942ea.firebasestorage.app/o/default_avatars%2Fdefault4.png?alt=media&token=ac7ae0a8-7a13-49d7-a89d-1234495b126c',
+  ];
+
   Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -64,6 +69,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           .child('avatars/${user.uid}.jpg');
       final uploadTask = await storageRef.putFile(File(_avatar!.path));
       photoUrl = await uploadTask.ref.getDownloadURL(); // get the Url from bucket
+    } else if (_selectedDefIndex != null) {
+      photoUrl = _defaultAvatarsUrls[_selectedDefIndex!];
     }
 
     // update Firebase auth profile
