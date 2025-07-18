@@ -31,7 +31,7 @@ class _ExplorePageState extends State<ExplorePage> {
 
   // search parameters
   double _radius = 1000; // in meters
-  List<String> _selectedTypes = ['restaurant'];
+  String _selectedType = 'restaurant';
 
   // fetched places
   List<Place> _places = [];
@@ -44,6 +44,19 @@ class _ExplorePageState extends State<ExplorePage> {
   List<Place> _searchResults = [];
   Timer? _debounce;
   bool _showSuggestions = false;
+
+  // list of choice chips to choose from
+  final List<String> _types = [
+    'restaurant',
+    'cafe',
+    'shopping_mall',
+    'bar',
+    'park',
+    'hospital',
+    'massage',
+    'school',
+    'museum',
+  ];
 
   @override
   void initState() {
@@ -93,7 +106,7 @@ class _ExplorePageState extends State<ExplorePage> {
         latitude: _lat!,
         longitude: _lng!,
         radius: _radius,
-        types: _selectedTypes,
+        types: [_selectedType], // wrap with a List
       );
       setState(() {
         // store the fetched places and update state
@@ -211,7 +224,7 @@ class _ExplorePageState extends State<ExplorePage> {
           // dropdown to select on searching results from TextSearch to change origin
           if (_showSuggestions)
             Container(
-              height: 300,
+              height: 250,
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -237,6 +250,39 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ),
 
+          // choice chip to select one type of place
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _types.length,
+                separatorBuilder: (context, i) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final type = _types[i];
+                  final isSelected = _selectedType == type;
+                  return ChoiceChip(
+                    label: Text(type),
+                    selected: isSelected,
+                    onSelected: (bool selected) {
+                      // if user try to de-select the same chip, do nothing
+                      if (!selected) return;
+                      setState(() {
+                        _selectedType = type;
+                      });
+
+                      // rerun the featchPlaces on this type
+                      _fetchPlaces();
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+
+          //slider + list-map switch
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -284,7 +330,8 @@ class _ExplorePageState extends State<ExplorePage> {
                     center: LatLng(_lat!, _lng!),
                     radius: _radius,
                     strokeColor: Colors.blueAccent,
-                    fillColor: Colors.blueAccent,
+                    strokeWidth: 4,
+                    fillColor: Colors.lightBlueAccent,
                   ),
                 },
                 markers: _places.map((p) {
