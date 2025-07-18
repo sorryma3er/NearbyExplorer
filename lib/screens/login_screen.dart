@@ -68,8 +68,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
       // navigate to onboarding screen if not seen onboarding
       if (seen) {
-        //TODO navigate to home
         debugPrint("Navigate to home screen");
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
         debugPrint("Navigate to onboarding screen");
         Navigator.pushReplacementNamed(context, '/onboarding');

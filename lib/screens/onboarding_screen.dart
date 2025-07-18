@@ -9,6 +9,8 @@ import '../constraint.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import './home_screen.dart';
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -71,8 +73,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     await user.reload(); // refresh the user object
 
-    // TODO navigate to home screen
     debugPrint("Navigate to home screen");
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
