@@ -211,7 +211,7 @@ class _ExplorePageState extends State<ExplorePage> {
           // dropdown to select on searching results from TextSearch to change origin
           if (_showSuggestions)
             Container(
-              height: 200,
+              height: 300,
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -237,13 +237,11 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ),
 
-          // radius slider
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.tune_outlined),
-                const SizedBox(width: 8),
                 Text('${(_radius/1000).toStringAsFixed(1)}km'),
                 Expanded(
                   child: Slider(
@@ -256,16 +254,9 @@ class _ExplorePageState extends State<ExplorePage> {
                     onChangeEnd: (_) => _fetchPlaces(),
                   ),
                 ),
-              ],
-            ),
-          ),
 
-          // Map/List toggle
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+                SizedBox(width: 16,),
+
                 const Icon(Icons.list),
                 Switch(
                   value: _showMap,
