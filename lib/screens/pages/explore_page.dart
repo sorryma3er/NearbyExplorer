@@ -108,6 +108,10 @@ class _ExplorePageState extends State<ExplorePage> {
         radius: _radius,
         types: [_selectedType], // wrap with a List
       );
+      
+      // sort the result by rating highest to lower
+      results.sort((a,b) => b.rating.compareTo(a.rating));
+      
       setState(() {
         // store the fetched places and update state
         _places = results;
