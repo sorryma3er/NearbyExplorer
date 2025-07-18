@@ -18,7 +18,10 @@ class ExplorePage extends StatefulWidget {
 
 class _ExplorePageState extends State<ExplorePage> {
   final PlaceService _placeService = PlaceService(_apiKey);
-  // extract user location info
+  // extract user location info as initial
+  double? _initialLat, _initialLng;
+
+  // the current location of program use
   double? _lat, _lng;
 
   // UI state
@@ -67,9 +70,13 @@ class _ExplorePageState extends State<ExplorePage> {
     }
 
     final position = await Geolocator.getCurrentPosition();
+    // set the initial Lat & Lng once, and when no search input reuse it to get nearby places
+    _initialLat = position.latitude;
+    _initialLng = position.longitude;
+
     setState(() {
-      _lat = position.latitude;
-      _lng = position.longitude;
+      _lat = _initialLat;
+      _lng = _initialLng;
     });
     await _fetchPlaces();
   }
@@ -107,6 +114,22 @@ class _ExplorePageState extends State<ExplorePage> {
     // use debounce so don’t hammer the API, API cost consider here,
     // delay the searching, so that user can finish typing if type fast
     if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // clear and reset the search results if text is empty
+    if (query.trim().isEmpty) {
+      setState(() {
+        _showSuggestions = false;
+        _searchResults = [];
+
+        // reset the lat & lng to initial position
+        _lat = _initialLat;
+        _lng = _initialLng;
+      });
+
+      // rerun nearby API
+      _fetchPlaces();
+      return;
+    }
 
     // only when user stop typing for 300ms, fire one search request
     _debounce = Timer(const Duration(milliseconds: 300), () async {
@@ -181,6 +204,7 @@ class _ExplorePageState extends State<ExplorePage> {
                 ),
               ),
               onChanged: _onSearchChanged,
+              controller: _searchController, // attach to controller
             ),
           ),
 
