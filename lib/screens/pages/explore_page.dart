@@ -58,6 +58,9 @@ class _ExplorePageState extends State<ExplorePage> {
     'museum',
   ];
 
+  // for showing the origin location on map
+  LatLng? _origin;
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +93,7 @@ class _ExplorePageState extends State<ExplorePage> {
     setState(() {
       _lat = _initialLat;
       _lng = _initialLng;
+      _origin = LatLng(_initialLat!, _initialLng!);
     });
     await _fetchPlaces();
   }
@@ -149,7 +153,7 @@ class _ExplorePageState extends State<ExplorePage> {
     }
 
     // only when user stop typing for 300ms, fire one search request
-    _debounce = Timer(const Duration(milliseconds: 300), () async {
+    _debounce = Timer(const Duration(milliseconds: 400), () async {
       final text = query.trim();
       if (text.isEmpty) {
         setState(() {
@@ -196,6 +200,7 @@ class _ExplorePageState extends State<ExplorePage> {
       _showSuggestions = false;
       _lat = p.lat;
       _lng = p.lng;
+      _origin = LatLng(p.lat, p.lng);
     });
     _fetchPlaces();
   }
@@ -381,13 +386,21 @@ class _ExplorePageState extends State<ExplorePage> {
                     fillColor: Colors.lightBlueAccent,
                   ),
                 },
-                markers: _places.map((p) {
-                  return Marker(
+                markers: {
+                  if (_origin != null)
+                    Marker(
+                      markerId: const MarkerId('origin'),
+                      position: _origin!,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                      infoWindow: const InfoWindow(title: 'Origin'),
+                      zIndexInt: 100,
+                    ),
+                  ..._places.map((p) => Marker(
                     markerId: MarkerId(p.resourceName),
                     position: LatLng(p.lat, p.lng),
                     infoWindow: InfoWindow(title: p.displayName),
-                  );
-                }).toSet(),
+                  )),
+                },
                 onMapCreated: (ctrl) => _mapController = ctrl,
               ),
             )
