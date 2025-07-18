@@ -200,6 +200,49 @@ class _ExplorePageState extends State<ExplorePage> {
     _fetchPlaces();
   }
 
+  // build the photo url for the place
+  String buildPhotoUrl(String photoName) {
+    return 'https://places.googleapis.com/v1/$photoName/media'
+        '?maxWidthPx=160&maxHeightPx=160&key=$_apiKey';
+  }
+
+  Widget _buildLeadingPic(Place p) {
+    if (p.photoNames.isEmpty) {
+      return const Icon(Icons.place, size: 48);
+    }
+
+    final url = buildPhotoUrl(p.photoNames.first);
+
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: Colors.grey.shade300,
+            alignment: Alignment.center,
+            child: const Icon(Icons.broken_image, size: 32, color: Colors.grey),
+          ),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              color: Colors.grey.shade200,
+              alignment: Alignment.center,
+              child: const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_lat == null || _lng == null) {
@@ -355,8 +398,9 @@ class _ExplorePageState extends State<ExplorePage> {
                 itemCount: _places.length,
                 itemBuilder: (context, i) {
                   final p = _places[i];
+
                   return ListTile(
-                    leading: Icon(Icons.place),
+                    leading: _buildLeadingPic(p),
                     title: Text(p.displayName),
                     subtitle: Text('${p.rating.toStringAsFixed(1)} ★\n${p.formattedAddress}', maxLines: 2, overflow: TextOverflow.ellipsis),
                     onTap: () {
