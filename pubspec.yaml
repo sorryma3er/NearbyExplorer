@@ -88,6 +88,14 @@ flutter:
             weight: 700
           - asset: assets/fonts/ComicRelief-Regular.ttf
             weight: 400
+      - family: SourGummy
+        fonts:
+          - asset: assets/fonts/SourGummy-ExtraBold.ttf
+            weight: 700
+          - asset: assets/fonts/SourGummy-Bold.ttf
+            weight: 600
+          - asset: assets/fonts/SourGummy-VariableFont_wdth,wght.ttf
+            weight: 800
   #         style: italic
   #   - family: Trajan Pro
   #     fonts:

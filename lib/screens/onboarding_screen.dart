@@ -44,8 +44,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     await prefs.setBool("completeOnboarding", true); // set flag
+    debugPrint("Complete onboarding ${prefs.getBool("completeOnboarding")}");
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -336,7 +337,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       builder: (ctx, constraints) {
         // build a two‐color gradient shader that spans the full width
         final shader = LinearGradient(
-          colors: [ Colors.greenAccent, Colors.yellowAccent, Colors.greenAccent ],
+          colors: [ Colors.purpleAccent, Colors.yellowAccent, Colors.purple],
         ).createShader(
           Rect.fromLTWH(0, 0, constraints.maxWidth, 0),
         );
@@ -345,9 +346,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           "Make your profile",
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'ComicRelief',
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
+            fontFamily: 'SourGummy',
+            fontSize: 34,
+            fontWeight: FontWeight.w600,
             foreground: Paint()..shader = shader,
             shadows: [
               Shadow(

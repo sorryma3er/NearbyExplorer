@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nearby_explorer/screens/register_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -51,6 +52,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _onPressedLogin() async{
     final email = emailController.text;
     final pwd = pwdController.text;
+    final pref = await SharedPreferences.getInstance();
+    final bool seen = pref.getBool('completeOnboarding') ?? false;
     debugPrint('Login pressed: email: $email, pwd: $pwd');
 
     try {
@@ -63,8 +66,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (!mounted) return;
       _showMessage(context, 'Welcome back! ${userCredential.user?.email}');
 
-      // navigate to onboarding screen
-      Navigator.pushReplacementNamed(context, '/onboarding');
+      // navigate to onboarding screen if not seen onboarding
+      if (seen) {
+        //TODO navigate to home
+        debugPrint("Navigate to home screen");
+      } else {
+        debugPrint("Navigate to onboarding screen");
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage;
 
