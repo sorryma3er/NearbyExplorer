@@ -16,8 +16,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 1; // default to be 1 --- Explore Page
 
   static final List<Widget> _pages = <Widget>[
-    const ExplorePage(),
     const NotificationsPage(),
+    const ExplorePage(),
     const FavoritesPage(),
     const ProfilePage(),
   ];

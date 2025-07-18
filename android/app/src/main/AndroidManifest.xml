@@ -1,11 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Grant your app permission to use the Internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Grant fine‐grained location access so "myLocationEnabled" works -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
         android:label="nearby_explorer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Map APIs key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD7kQHyGfDcFhWBLX4D6Rne4tfoY6ovbOU"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
