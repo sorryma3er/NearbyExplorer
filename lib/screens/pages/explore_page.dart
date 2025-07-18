@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -34,10 +36,23 @@ class _ExplorePageState extends State<ExplorePage> {
   // google map controller
   GoogleMapController? _mapController;
 
+  // search-ahead state
+  final TextEditingController _searchController = TextEditingController();
+  List<Place> _searchResults = [];
+  Timer? _debounce;
+  bool _showSuggestions = false;
+
   @override
   void initState() {
     super.initState();
     _determinePosition();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _determinePosition() async {
@@ -88,6 +103,63 @@ class _ExplorePageState extends State<ExplorePage> {
     }
   }
 
+  void _onSearchChanged(String query) {
+    // use debounce so don’t hammer the API, API cost consider here,
+    // delay the searching, so that user can finish typing if type fast
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // only when user stop typing for 300ms, fire one search request
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      final text = query.trim();
+      if (text.isEmpty) {
+        setState(() {
+          _searchResults = [];
+          _showSuggestions = false;
+        });
+        return;
+      }
+
+      try {
+        final hits = await _placeService.searchText(
+          query: text,
+          latitude: _lat,
+          longitude: _lng,
+          radius: 50000.0, // hardcode here as max distance for text search, since I dont want the search result being toooooo far away
+        );
+
+        // sort by distance from current origin
+        hits.sort((a, b) {
+          final da = Geolocator.distanceBetween(_lat!, _lng!, a.lat, a.lng);
+          final db = Geolocator.distanceBetween(_lat!, _lng!, b.lat, b.lng);
+          return da.compareTo(db);
+        });
+
+        setState(() {
+          _searchResults = hits;
+          _showSuggestions = hits.isNotEmpty;
+        });
+      } catch (e) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
+    });
+  }
+
+  void _selectOrigin(Place p) {
+    // user tapped one of the dropdown items
+    _debounce?.cancel();
+    _searchController.text = p.displayName;
+
+    // choose the selected place as origin, and update state
+    setState(() {
+      _showSuggestions = false;
+      _lat = p.lat;
+      _lng = p.lng;
+    });
+    _fetchPlaces();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_lat == null || _lng == null) {
@@ -97,6 +169,50 @@ class _ExplorePageState extends State<ExplorePage> {
     return SafeArea(
       child: Column(
         children: [
+          // support search as origin textfield search
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search a place as origin ...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: _onSearchChanged,
+            ),
+          ),
+
+          // dropdown to select on searching results from TextSearch to change origin
+          if (_showSuggestions)
+            Container(
+              height: 200,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [BoxShadow(blurRadius: 8, color: Colors.black26)],
+              ),
+              child: ListView.builder(
+                itemCount: _searchResults.length,
+                itemBuilder: (context, i) {
+                  final place = _searchResults[i];
+                  final distance = Geolocator.distanceBetween(_lat!, _lng!, place.lat, place.lng);
+                  return ListTile(
+                    // each suggestion is a place with info: distance, displayname, formatted addr,
+                    leading: const Icon(Icons.place),
+                    title: Text(place.displayName),
+                    subtitle: Text(place.formattedAddress),
+                    trailing: Text('${(distance/1000).toStringAsFixed(2)}km'),
+                    onTap: () => _selectOrigin(place),
+                  );
+                },
+
+              ),
+            ),
+
           // radius slider
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

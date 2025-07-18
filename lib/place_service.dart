@@ -57,4 +57,51 @@ class PlaceService {
 
     return places;
   }
+
+  Future<List<Place>> searchText({
+    required String query,
+    // optional bias circle:
+    double? latitude,
+    double? longitude,
+    double? radius,
+  }) async {
+    final uri = Uri.parse('https://places.googleapis.com/v1/places:searchText'); // new APIs endpoint
+
+    // build the JSON body
+    final body = <String, dynamic>{
+      'textQuery': query,
+    };
+    if (latitude != null && longitude != null && radius != null) {
+      body['locationBias'] = {
+        'circle': {
+          'center': {
+            'latitude': latitude,
+            'longitude': longitude,
+          },
+          'radius': radius,
+        }
+      };
+    }
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': _apiKey,
+
+        // ask only for the fields that factory func Place.fromJson knows about:
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
+      },
+      body: json.encode(body),
+    );
+
+    if (resp.statusCode != 200) {
+      throw Exception('Text Search failed [${resp.statusCode}]: ${resp.body}');
+    }
+
+    final data = json.decode(resp.body) as Map<String, dynamic>;
+    final list = (data['places'] as List<dynamic>? ?? []);
+    return list
+        .map((js) => Place.fromJson(js as Map<String, dynamic>))
+        .toList();
+  }
 }
