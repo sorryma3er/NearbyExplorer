@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../place_model.dart';
 import '../../place_service.dart';
+import './place_detail_page.dart';
 
 const String _apiKey = 'AIzaSyD7kQHyGfDcFhWBLX4D6Rne4tfoY6ovbOU';
 
@@ -417,7 +418,16 @@ class _ExplorePageState extends State<ExplorePage> {
                     title: Text(p.displayName),
                     subtitle: Text('${p.rating.toStringAsFixed(1)} ★\n${p.formattedAddress}', maxLines: 2, overflow: TextOverflow.ellipsis),
                     onTap: () {
-                      // TODO go to detail page of that place
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => PlaceDetailSheet(
+                          place: p,
+                          placeService: _placeService,
+                          apiKey: _apiKey,
+                        ),
+                      );
                     },
                   );
                 },
