@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
+import 'package:nearby_explorer/place_detail_model.dart';
 import './place_model.dart';
 
 class PlaceService {
@@ -34,7 +36,7 @@ class PlaceService {
         'X-Goog-Api-Key': _apiKey,
 
         // include the fields that we want to receive in the response
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
+        'X-Goog-FieldMask': 'places.name,places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
       },
       body: json.encode(body),
     );
@@ -88,7 +90,7 @@ class PlaceService {
         'X-Goog-Api-Key': _apiKey,
 
         // ask only for the fields that factory func Place.fromJson knows about:
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
+        'X-Goog-FieldMask': 'places.name,places.displayName,places.formattedAddress,places.location,places.rating,places.photos',
       },
       body: json.encode(body),
     );
@@ -102,5 +104,35 @@ class PlaceService {
     return list
         .map((js) => Place.fromJson(js as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<PlaceDetail> fetchPlaceDetail(String resourceName) async {
+    // resourceName should look like "places/ChIJxxxxxxxx"
+    final url = Uri.parse('https://places.googleapis.com/v1/$resourceName');
+
+    final headers = {
+      'X-Goog-Api-Key': _apiKey,
+      // OPTION 1: Header field mask
+      'X-Goog-FieldMask': 'name,displayName,formattedAddress,location,rating,userRatingCount,photos,reviews',
+      'Content-Type': 'application/json',
+    };
+
+    debugPrint('[PlaceDetail] GET $url');
+    debugPrint('[PlaceDetail] headers: $headers');
+
+    final resp = await http.get(url, headers: headers);
+
+    debugPrint('[PlaceDetail] status: ${resp.statusCode}');
+    debugPrint('[PlaceDetail] body: ${resp.body}');
+
+    if (resp.statusCode == 404) {
+      throw Exception('Detail failed: 404 (resource not found) resourceName=$resourceName');
+    }
+    if (resp.statusCode != 200) {
+      throw Exception('Detail failed: ${resp.statusCode} body=${resp.body}');
+    }
+
+    final data = json.decode(resp.body) as Map<String, dynamic>;
+    return PlaceDetail.fromJson(data);
   }
 }
