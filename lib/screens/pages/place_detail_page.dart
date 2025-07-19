@@ -297,7 +297,14 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
               ? const Center(child: CircularProgressIndicator())
               : _error != null
                 ? Center(child: Text('Error: $_error'))
-                : _buildContent(scrollController),
+                : AnimatedPadding(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                    padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+            child: _buildContent(scrollController),
+          ),
         );
       },
     );
