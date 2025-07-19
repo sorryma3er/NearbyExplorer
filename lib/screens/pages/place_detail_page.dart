@@ -526,16 +526,180 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     );
   }
 
-  Widget _commentsStreamList() {
-    // TODO replace with StreamBuilder<QuerySnapshot>
-    return SizedBox(
-      height: 240,
-      child: ListView.builder(
-        itemCount: 0, // hook Firestore stream
-        itemBuilder: (_, i) {
-          return const ListTile(title: Text('TODO comment'));
+  Widget _commentsStreamList() { // use StreamBuilder to build the list of comments
+    final placeId = placeIdFromResource(widget.place.resourceName);
+
+    final query = _commentsCol(placeId) // query for comments
+        .where('parentId', isNull: true)
+        .orderBy('createdAt', descending: true)
+        .limit(30);
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: query.snapshots(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snap.hasError) {
+          return Text('Error loading comments: ${snap.error}',
+              style: _commentTextStyle());
+        }
+
+        final docs = snap.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return Text('No comments yet', style: _commentTextStyle());
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: docs.length,
+          itemBuilder: (context, i) {
+            final doc = docs[i];
+            return _commentTile(placeId, doc);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _commentTile(String placeId, QueryDocumentSnapshot<Map<String, dynamic>> doc, {bool isReply = false}) {
+    final data = doc.data();
+    final deleted = data['deleted'] == true;
+    final text = (deleted ? '[deleted]' : (data['text'] as String? ?? ''));
+    final userDisplay = (data['anonymous'] == true || (data['userDisplayName'] as String?)?.isEmpty == true)
+        ? 'Anonymous'
+        : data['userDisplayName'] as String;
+    final userPhoto = data['anonymous'] == true ? null : data['userPhotoUrl'] as String?;
+    final replyCount = (data['replyCount'] as int?) ?? 0;
+    final isMine = _auth.currentUser?.uid == data['userId'];
+
+    final avatar = CircleAvatar(
+      radius: 16,
+      backgroundColor: Colors.amber.shade300,
+      backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
+      child: userPhoto == null
+          ? Text( // use the first letter of the user display name as avatar
+        userDisplay.isNotEmpty ? userDisplay[0].toUpperCase() : '?',
+        style: _commentTextStyle().copyWith(color: Colors.white),
+      )
+          : null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isReply ? 40 : 0,
+        top: 8,
+        bottom: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              avatar,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(userDisplay, style: _commentTextStyle().copyWith(fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(
+                      text,
+                      style: _commentTextStyle().copyWith(
+                        fontSize: 14,
+                        fontStyle: deleted ? FontStyle.italic : FontStyle.normal,
+                        color: deleted ? Colors.grey : null,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (!deleted)
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _replyToCommentId = doc.id;
+                                _replyToAuthorDisplay = userDisplay == 'Anonymous' ? '' : userDisplay;
+                              });
+                            },
+                            icon: const Icon(Icons.reply, size: 16),
+                            label: Text('Reply', style: _commentTextStyle().copyWith(fontSize: 12)),
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 28)),
+                          ),
+                        if (isMine && !deleted)
+                          TextButton.icon(
+                            onPressed: () => _softDeleteComment(placeId, doc.id),
+                            icon: const Icon(Icons.delete_outline, size: 16),
+                            label: Text('Delete', style: _commentTextStyle().copyWith(fontSize: 12)),
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 28)),
+                          ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Replies list toggle
+          if (replyCount > 0 && !isReply)
+            _repliesSection(placeId, doc.id, replyCount),
+        ],
+      ),
+    );
+  }
+
+  Widget _repliesSection(String placeId, String parentId, int replyCount) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 40, top: 4, bottom: 4),
+      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _commentsCol(placeId)
+            .where('parentId', isEqualTo: parentId) // need to build index
+            .orderBy('createdAt', descending: false)
+            .limit(15)
+            .snapshots(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Padding(
+              padding: EdgeInsets.all(4.0),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }
+          final docs = snap.data?.docs ?? [];
+          if (docs.isEmpty) {
+            return Text('Replies not loaded',
+                style: _commentTextStyle().copyWith(fontSize: 12));
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: docs
+                .map((d) => _commentTile(placeId, d, isReply: true))
+                .toList(),
+          );
         },
       ),
     );
+  }
+
+  Future<void> _softDeleteComment(String placeId, String commentId) async {
+    try {
+      await _commentsCol(placeId).doc(commentId).update({
+        'deleted': true,
+        'text': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delete failed: $e')),
+      );
+    }
   }
 }
