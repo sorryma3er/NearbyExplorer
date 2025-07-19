@@ -259,5 +259,120 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     );
   }
 
+  Widget _appCommentsSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(),
+          const SizedBox(height: 12),
+          _commentInput(),
+          const SizedBox(height: 16),
+          _commentsStreamList(),
+        ],
+      ),
+    );
+  }
 
+  Widget _sectionHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.amber, width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.amber.withValues(alpha: 0.3),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.amber),
+              const SizedBox(width: 6),
+              Text('Community Comments',
+                  style: TextStyle(
+                      color: Colors.amber.shade700, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+        const Spacer(),
+        Row(
+          children: [
+            const Text('Anonymous'),
+            Switch(
+              value: _anonymous,
+              onChanged: (v) => setState(() => _anonymous = v),
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _commentInput() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Avatar placeholder
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: Colors.amber.shade200,
+          // TODO use users avatar here
+          child: const Icon(Icons.person, color: Colors.white),
+        ),
+
+        const SizedBox(width: 12),
+
+        Expanded(
+          child: Column(
+            children: [
+              TextField(
+                controller: _commentController,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: 'Give ur opinion...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: _posting || _commentController.text.trim().isEmpty
+                      ? null
+                      : _postComment,
+                  child: _posting
+                      ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Post'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _commentsStreamList() {
+    // TODO replace with StreamBuilder<QuerySnapshot>
+    return SizedBox(
+      height: 240,
+      child: ListView.builder(
+        itemCount: 0, // hook Firestore stream
+        itemBuilder: (_, i) {
+          return const ListTile(title: Text('TODO comment'));
+        },
+      ),
+    );
+  }
 }
