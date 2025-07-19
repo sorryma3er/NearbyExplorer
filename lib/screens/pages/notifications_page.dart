@@ -24,8 +24,9 @@ class NotificationsPage extends StatelessWidget {
     }
 
     final query = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
         .collection('notifications')
-        .where('toUserId', isEqualTo: user.uid)
         .orderBy('createdAt', descending: true)
         .limit(30);
 
@@ -72,18 +73,20 @@ class NotificationsPage extends StatelessWidget {
               ),
               title: Text('$fromName replied to your comment'),
               subtitle: Text(
-                preview == null || preview.isEmpty
-                    ? '(anonymous reply)'
-                    : preview,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                'Tap to view it',
               ),
               trailing: read ? null : const Icon(Icons.fiber_new, color: Colors.redAccent, size: 18),
               onTap: () async {
-                FirebaseFirestore.instance
+                final notifRef = FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
                     .collection('notifications')
-                    .doc(doc.id)
-                    .update({'read': true});
+                    .doc(doc.id);
+
+                // mark as read
+                notifRef.update({'read': true}).catchError((e){
+                  debugPrint('Mark read failed: $e');
+                });
 
                 // navigate to place detail page via showModalBottomSheet
                 final placeId = data['placeId'] as String;
