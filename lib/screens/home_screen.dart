@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../place_service.dart';
 import './pages/explore_page.dart';
 import './pages/notifications_page.dart';
 import './pages/favorites_page.dart';
 import './pages/profile_page.dart';
+
+const String _apiKey = 'AIzaSyD7kQHyGfDcFhWBLX4D6Rne4tfoY6ovbOU';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,12 +18,19 @@ class _HomeScreenState extends State<HomeScreen> {
   /// track which tab is selected
   int _currentIndex = 1; // default to be 1 --- Explore Page
 
-  static final List<Widget> _pages = <Widget>[
-    const NotificationsPage(),
-    const ExplorePage(),
-    const FavoritesPage(),
-    const ProfilePage(),
-  ];
+  late final PlaceService _placeService = PlaceService(_apiKey);
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const NotificationsPage(),
+      ExplorePage(),
+      FavoritesPage(placeService: _placeService, apiKey: _apiKey),
+      const ProfilePage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
