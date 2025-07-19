@@ -35,6 +35,10 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
   final _auth = FirebaseAuth.instance;
   final _fs = FirebaseFirestore.instance;
 
+  // for reply comment
+  String? _replyToCommentId;
+  String? _replyToAuthorDisplay; // for UI hint
+
   @override
   void initState() {
     super.initState();
@@ -115,20 +119,70 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     }
   }
 
-  Future<void> _postComment() async {
-    final txt = _commentController.text.trim();
+  // helper func to get collection reference for comments
+  CollectionReference<Map<String, dynamic>> _commentsCol(String placeId) =>
+      _fs.collection('places').doc(placeId).collection('comments');
 
-    if (txt.isEmpty) return;
-    setState(() => _posting = true);
+  Future<void> _postComment() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to comment')),
+      );
+      return;
+    }
+
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+
+    final placeId = placeIdFromResource(widget.place.resourceName);
+    final isReply = _replyToCommentId != null;
+    setState(() {
+      _posting = true;
+    });
+
     try {
-      // TODO Firestore add comment
+      final newDoc = _commentsCol(placeId).doc();
+      final now = FieldValue.serverTimestamp();
+
+      final commentData = {
+        'userId': user.uid,
+        'userDisplayName': _anonymous ? '' : (user.displayName ?? ''),
+        'userPhotoUrl': _anonymous ? null : user.photoURL,
+        'text': text,
+        'anonymous': _anonymous,
+        'parentId': _replyToCommentId, // null for top-level
+        'replyCount': 0, // for top-level; stays 0 on replies
+        'createdAt': now,
+        'updatedAt': now,
+        'deleted': false, //soft delete
+      };
+
+      WriteBatch batch = _fs.batch();
+      batch.set(newDoc, commentData);
+
+      // if this is a reply we increment parent replyCount
+      if (isReply) {
+        final parentRef = _commentsCol(placeId).doc(_replyToCommentId);
+        batch.update(parentRef, {
+          'replyCount': FieldValue.increment(1),
+          'updatedAt': now,
+        });
+      }
+      await batch.commit(); // commit to write to it
+
+      // clear composer
       _commentController.clear();
+      setState(() {
+        _replyToCommentId = null;
+        _replyToAuthorDisplay = null;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Comment failed: $e')),
       );
     } finally {
-      setState(() => _posting = false);
+      if (mounted) setState(() => _posting = false);
     }
   }
 
@@ -411,6 +465,29 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
         Expanded(
           child: Column(
             children: [
+              if (_replyToCommentId != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Replying to ${_replyToAuthorDisplay?.isEmpty ?? true ? "user" : _replyToAuthorDisplay}',
+                          style: _commentTextStyle().copyWith(fontSize: 12, color: Colors.amber.shade900),
+                        ),
+                      ),
+
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _replyToCommentId = null;
+                          _replyToAuthorDisplay = null;
+                        }),
+                        child: const Icon(Icons.close, size: 16),
+                      )
+                    ],
+                  ),
+                ),
+
               TextField(
                 controller: _commentController,
                 maxLines: 3,
