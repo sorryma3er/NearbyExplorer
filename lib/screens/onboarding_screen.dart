@@ -51,10 +51,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setBool("completeOnboarding", true); // set flag
-    debugPrint("Complete onboarding ${prefs.getBool("completeOnboarding")}");
-
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       debugPrint("User is null");
@@ -80,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     await user.reload(); // refresh the user object
 
-    debugPrint("Navigate to home screen");
+    await prefs.setBool('completeOnboarding_${user.uid}', true);
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/home');
   }

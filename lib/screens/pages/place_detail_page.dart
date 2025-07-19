@@ -492,7 +492,6 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.amber.shade200,
-          // TODO use users avatar here
           child: const Icon(Icons.person, color: Colors.white),
         ),
 

@@ -52,26 +52,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _onPressedLogin() async{
     final email = emailController.text;
     final pwd = pwdController.text;
-    final pref = await SharedPreferences.getInstance();
-    final bool seen = pref.getBool('completeOnboarding') ?? false;
     debugPrint('Login pressed: email: $email, pwd: $pwd');
 
     try {
-      FirebaseAuth _auth = FirebaseAuth.instance;
+      final FirebaseAuth _auth = FirebaseAuth.instance;
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: pwd,
       );
+      final user = userCredential.user;
       // on success
       if (!mounted) return;
       _showMessage(context, 'Welcome back! ${userCredential.user?.email}');
 
+      final prefs = await SharedPreferences.getInstance();
+      final seen = user == null
+          ? false
+          : (prefs.getBool('completeOnboarding_${user.uid}') ?? false);
+
       // navigate to onboarding screen if not seen onboarding
       if (seen) {
-        debugPrint("Navigate to home screen");
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        debugPrint("Navigate to onboarding screen");
         Navigator.pushReplacementNamed(context, '/onboarding');
       }
     } on FirebaseAuthException catch (e) {
