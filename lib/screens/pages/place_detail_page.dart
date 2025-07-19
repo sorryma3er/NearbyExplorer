@@ -46,6 +46,13 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     _checkFavorite();
   }
 
+  //prevent mem leak
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     try {
       final d = await widget.placeService.fetchPlaceDetail(widget.place.resourceName);
@@ -595,19 +602,25 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
   Widget _commentTile(String placeId, QueryDocumentSnapshot<Map<String, dynamic>> doc, {bool isReply = false}) {
     final data = doc.data();
     final deleted = data['deleted'] == true;
+    final replyCount = (data['replyCount'] as int?) ?? 0;
+
+    // skip the deleted comments that have no children reply
+    if (deleted && replyCount == 0) {
+      return const SizedBox.shrink();
+    }
+
     final text = (deleted ? '[deleted]' : (data['text'] as String? ?? ''));
     final userDisplay = (data['anonymous'] == true || (data['userDisplayName'] as String?)?.isEmpty == true)
         ? 'Anonymous'
         : data['userDisplayName'] as String;
     final userPhoto = data['anonymous'] == true ? null : data['userPhotoUrl'] as String?;
-    final replyCount = (data['replyCount'] as int?) ?? 0;
     final isMine = _auth.currentUser?.uid == data['userId'];
 
     final avatar = CircleAvatar(
       radius: 16,
       backgroundColor: Colors.amber.shade300,
-      backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
-      child: userPhoto == null
+      backgroundImage: (userPhoto != null && !deleted) ? NetworkImage(userPhoto) : null,
+      child: (userPhoto == null || deleted)
           ? Text( // use the first letter of the user display name as avatar
         userDisplay.isNotEmpty ? userDisplay[0].toUpperCase() : '?',
         style: _commentTextStyle().copyWith(color: Colors.white),
@@ -616,11 +629,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     );
 
     return Padding(
-      padding: EdgeInsets.only(
-        left: isReply ? 40 : 0,
-        top: 8,
-        bottom: 8,
-      ),
+      padding: EdgeInsets.only(left: isReply ? 40 : 0, top: 8, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -633,8 +642,9 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(userDisplay, style: _commentTextStyle().copyWith(fontSize: 13)),
-                    const SizedBox(height: 4),
+                    if (!deleted)
+                      Text(userDisplay, style: _commentTextStyle().copyWith(fontSize: 13)),
+                    if (!deleted) const SizedBox(height: 4),
                     Text(
                       text,
                       style: _commentTextStyle().copyWith(
@@ -644,36 +654,41 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (!deleted && !isReply) // if its a sub_reply alr, then disable the button for reply
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _replyToCommentId = doc.id;
-                                _replyToAuthorDisplay = userDisplay == 'Anonymous' ? '' : userDisplay;
-                              });
-                            },
-                            icon: const Icon(Icons.reply, size: 16),
-                            label: Text('Reply', style: _commentTextStyle().copyWith(fontSize: 12)),
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 28)),
-                          ),
-                        if (isMine && !deleted)
-                          TextButton.icon(
-                            onPressed: () => _softDeleteComment(placeId, doc.id),
-                            icon: const Icon(Icons.delete_outline, size: 16),
-                            label: Text('Delete', style: _commentTextStyle().copyWith(fontSize: 12)),
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 28)),
-                          ),
-                      ],
-                    )
+                    if (!deleted) // no actions on placeholder
+                      Row(
+                        children: [
+                          if (!isReply)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _replyToCommentId = doc.id;
+                                  _replyToAuthorDisplay = userDisplay == 'Anonymous' ? '' : userDisplay;
+                                });
+                              },
+                              icon: const Icon(Icons.reply, size: 16),
+                              label: Text('Reply',
+                                  style: _commentTextStyle().copyWith(fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero, minimumSize: const Size(40, 28)),
+                            ),
+                          if (isMine)
+                            TextButton.icon(
+                              onPressed: () => _softDeleteComment(placeId, doc.id),
+                              icon: const Icon(Icons.delete_outline, size: 16),
+                              label: Text('Delete',
+                                  style: _commentTextStyle().copyWith(fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero, minimumSize: const Size(50, 28)),
+                            ),
+                        ],
+                      ),
                   ],
                 ),
               ),
             ],
           ),
 
-          // Replies list toggle
+          // always show replies (if any) for parent, even if parent is deleted.
           if (replyCount > 0 && !isReply)
             _repliesSection(placeId, doc.id, replyCount),
         ],
@@ -687,6 +702,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
       child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _commentsCol(placeId)
             .where('parentId', isEqualTo: parentId) // need to build index
+            .where('deleted', isEqualTo: false) // filter out replies that been deleted
             .orderBy('createdAt', descending: false)
             .limit(15)
             .snapshots(),
@@ -718,11 +734,43 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
   }
 
   Future<void> _softDeleteComment(String placeId, String commentId) async {
+    final commentRef = _commentsCol(placeId).doc(commentId);
+
     try {
-      await _commentsCol(placeId).doc(commentId).update({
-        'deleted': true,
-        'text': '',
-        'updatedAt': FieldValue.serverTimestamp(),
+      await _fs.runTransaction((tx) async {
+        final commentSnap = await tx.get(commentRef);
+        if (!commentSnap.exists) return;
+
+        final data = commentSnap.data()!;
+        if (data['deleted'] == true) return; // already deleted, nothing to do
+
+        final parentId = data['parentId'];
+        DocumentSnapshot<Map<String, dynamic>>? parentSnap;
+
+        if (parentId != null) {
+          final parentRef = _commentsCol(placeId).doc(parentId);
+          parentSnap = await tx.get(parentRef);
+        }
+
+        // now can write to it
+        final now = FieldValue.serverTimestamp();
+        tx.update(commentRef, {
+          'deleted': true,
+          'text': '',
+          'updatedAt': now,
+        });
+
+        // if it was a reply, decrement parent.replyCount
+        if (parentId != null && parentSnap != null && parentSnap.exists) {
+          final parentData = parentSnap.data()!;
+          final current = (parentData['replyCount'] as int?) ?? 0;
+          if (current > 0) {
+            tx.update(parentSnap.reference, {
+              'replyCount': current - 1,
+              'updatedAt': now,
+            });
+          }
+        }
       });
     } catch (e) {
       if (!mounted) return;
