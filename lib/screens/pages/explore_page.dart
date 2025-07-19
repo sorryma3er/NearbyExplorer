@@ -207,6 +207,18 @@ class _ExplorePageState extends State<ExplorePage> {
     _fetchPlaces();
   }
 
+  double _distanceMeters(Place p) {
+    if (_lat == null || _lng == null) return 0;
+    return Geolocator.distanceBetween(_lat!, _lng!, p.lat, p.lng);
+  }
+
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.round()} m';
+    }
+    return '${(meters / 1000).toStringAsFixed(meters < 10_000 ? 2 : 1)} km';
+  }
+
   // build the photo url for the place
   String buildPhotoUrl(String photoName) {
     return 'https://places.googleapis.com/v1/$photoName/media'
@@ -414,10 +426,13 @@ class _ExplorePageState extends State<ExplorePage> {
                 itemBuilder: (context, i) {
                   final p = _places[i];
 
+                  final dist = _distanceMeters(p);
+                  final distText = _formatDistance(dist);
+
                   return ListTile(
                     leading: _buildLeadingPic(p),
                     title: Text(p.displayName),
-                    subtitle: Text('${p.rating.toStringAsFixed(1)} ★\n${p.formattedAddress}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Text('${p.rating.toStringAsFixed(1)} ★           $distText\n${p.formattedAddress}\n${p.formattedAddress}', maxLines: 2, overflow: TextOverflow.ellipsis),
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
