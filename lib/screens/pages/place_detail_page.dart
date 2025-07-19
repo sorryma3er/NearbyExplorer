@@ -137,6 +137,34 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
 
     final placeId = placeIdFromResource(widget.place.resourceName);
     final isReply = _replyToCommentId != null;
+
+    // enforce only 2 levels (top-level + one reply level), no 3rd layers reply
+    if (_replyToCommentId != null) {
+      final parentSnap = await _commentsCol(placeId).doc(_replyToCommentId!).get();
+      final parentData = parentSnap.data();
+      if (parentData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Original comment no longer exists.')),
+        );
+        setState(() {
+          _replyToCommentId = null;
+          _replyToAuthorDisplay = null;
+        });
+        return;
+      }
+      // if parent itself has a parentId, which means right now is the 3rd layer
+      if (parentData['parentId'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nested replies beyond one level are disabled.')),
+        );
+        setState(() {
+          _replyToCommentId = null;
+          _replyToAuthorDisplay = null;
+        });
+        return; // block
+      }
+    }
+
     setState(() {
       _posting = true;
     });
@@ -186,6 +214,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     }
   }
 
+  // helper to formPhotoUrl as before
   String formPhotoUrl(String photoName, {int w = 640}) => 'https://places.googleapis.com/v1/$photoName/media?maxWidthPx=$w&key=${widget.apiKey}';
 
   @override
@@ -617,7 +646,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        if (!deleted)
+                        if (!deleted && !isReply) // if its a sub_reply alr, then disable the button for reply
                           TextButton.icon(
                             onPressed: () {
                               setState(() {
