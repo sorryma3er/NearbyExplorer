@@ -21,7 +21,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   bool _dirty = false;
   bool _uploading = false;
 
-  late final AnimationController _anim; // single controller to stagger children
+  late final AnimationController _anim;
 
   static const List<String> _defaultAvatarsUrls = [
     'https://firebasestorage.googleapis.com/v0/b/nearbyexplorer-942ea.firebasestorage.app/o/default_avatars%2Fdefault1.png?alt=media&token=92a30175-1f49-4622-bebc-f001a7f4235b',
@@ -85,7 +85,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       String? newUrl;
 
       if (_pickedFile != null) {
-        // Upload the picked file to storage
         final ref = FirebaseStorage.instance.ref().child('avatars/${user.uid}.jpg');
         final task = await ref.putFile(
           _pickedFile!,
@@ -93,7 +92,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         );
         newUrl = await task.ref.getDownloadURL();
       } else if (_selectedDefaultIndex != null) {
-        // Use the selected hosted default URL directly
         newUrl = _defaultAvatarsUrls[_selectedDefaultIndex!];
       }
 
@@ -136,8 +134,11 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     final user = _auth.currentUser;
 
     if (user == null) {
-      return Center(
-        child: Text('Not signed in', style: _commentTextStyle()),
+      return Container(
+        decoration: _gradientDecoration,
+        child: Center(
+          child: Text('Not signed in', style: _commentTextStyle()),
+        ),
       );
     }
 
@@ -145,7 +146,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         ? user.displayName!.trim()
         : (user.email ?? 'User');
 
-    // Determine avatar to show
     ImageProvider? avatarImage;
     if (_pickedFile != null) {
       avatarImage = FileImage(_pickedFile!);
@@ -156,7 +156,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     }
 
     final children = <Widget>[
-      // Avatar + name
       _buildAvatarSection(avatarImage, displayName)
           .animate(controller: _anim)
           .fadeIn(duration: 400.ms, curve: Curves.easeOut)
@@ -164,7 +163,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
 
       const SizedBox(height: 32),
 
-      // Default avatars
       _buildDefaultsHeader()
           .animate(controller: _anim)
           .fadeIn(delay: 150.ms, duration: 350.ms)
@@ -179,43 +177,56 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
 
       const SizedBox(height: 40),
 
-      // Save button
       _buildSaveButton()
           .animate(controller: _anim)
           .fadeIn(delay: 400.ms, duration: 400.ms)
           .slide(begin: const Offset(0, 0.15)),
 
       const SizedBox(height: 40),
+
       const Divider(),
+
       const SizedBox(height: 24),
 
-      // Logout tile
       _buildLogoutTile()
           .animate(controller: _anim)
           .fadeIn(delay: 550.ms, duration: 400.ms)
           .slide(begin: const Offset(0, 0.1)),
     ];
 
-    return Stack(
-      children: [
-        ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          children: children,
-        ),
-        if (_uploading)
-          Container(
-            color: Colors.black26,
-            child: const Center(
-              child: SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(strokeWidth: 5),
-              ),
+    return Container(
+      decoration: _gradientDecoration,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              children: children,
             ),
-          ),
-      ],
+            if (_uploading)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(strokeWidth: 5),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
+
+  BoxDecoration get _gradientDecoration => const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [ Color(0xFFee9ca7), Color(0xFFffdDe1) ],
+    ),
+  );
 
   Widget _buildAvatarSection(ImageProvider? avatarImage, String displayName) {
     return Center(
@@ -297,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? Colors.green : Colors.grey,
+                  color: selected ? Colors.green.withValues(alpha: 0.4) : Colors.grey,
                   width: selected ? 3 : 1.5,
                 ),
                 image: DecorationImage(
