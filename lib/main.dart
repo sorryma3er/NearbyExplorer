@@ -18,6 +18,8 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  final user = FirebaseAuth.instance.currentUser;
+  debugPrint('Startup user: ${user?.uid} name=${user?.displayName} anonymous=${user?.isAnonymous}');
 
   runApp(const MyApp());
 }
