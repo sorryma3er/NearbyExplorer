@@ -92,25 +92,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.pushReplacementNamed(context, '/home');
   }
 
-  static Widget _flightBuilder(BuildContext context,
-      Animation<double> animation,
-      HeroFlightDirection direction,
-      BuildContext fromCtx,
-      BuildContext toCtx) {
-    final child = (direction == HeroFlightDirection.push
-        ? toCtx.widget
-        : fromCtx.widget);
-    return FadeTransition(
-      opacity: animation,
-      child: ScaleTransition(
-        scale: Tween<double>(begin: .85, end: 1).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-        ),
-        child: child,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,8 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   _buildProfilePage(),
                   _buildRowShowcasePage(),
-                  // _buildColumnDetailPage(),
-                  // _buildFlyOutPage(),
+                  _buildColumnShowcasePage(),
                 ],
               ),
 
@@ -164,9 +144,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     // smooth indicator
                     SmoothPageIndicator(
                       controller: _pageController,
-                      count: 4,
+                      count: 3,
                       effect: ExpandingDotsEffect(
-                        activeDotColor: Colors.lightBlueAccent,
+                        activeDotColor: Colors.purple,
                         dotColor: Colors.grey,
                         dotHeight: 8,
                         dotWidth: 8,
@@ -185,13 +165,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           }
                         }
 
-                        if (_currentPage < 3) {
+                        if (_currentPage < 2) {
                           _pageController.nextPage(duration: 300.ms, curve: Curves.easeInOut);
                         } else {
                           completeOnboarding();
                         }
                       },
-                      child: Text(_currentPage == 3 ? "Complete" : "Next"),
+                      child: Text(_currentPage == 2 ? "Complete" : "Next"),
                     ),
                   ],
                 ),
@@ -412,7 +392,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Title anim
           Text(
             'Your Tabs',
             style: _commentTextStyle().copyWith(
@@ -426,7 +405,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           const SizedBox(height: 12),
 
-          // Subtitle anim
           Text(
             'A quick glance at the core areas',
             textAlign: TextAlign.center,
@@ -442,7 +420,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           const SizedBox(height: 36),
 
-          // Icons row (each animates internally)
+          // Icons row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -460,7 +438,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           const Spacer(),
 
-          // Hint text anim
           Text(
             'Next: see details',
             style: _commentTextStyle().copyWith(
@@ -477,52 +454,162 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  Widget _buildColumnShowcasePage() {
+    final items = [
+      (heroExplore, Icons.explore, 'Explore', 'Find nearby places around your chosen origin.'),
+      (heroFavorites, Icons.favorite, 'Favorites', 'Quick access to places you marked.'),
+      (heroNotifications, Icons.notifications, 'Notify', 'Replies & updates on your comments.'),
+      (heroProfile, Icons.person, 'Profile', 'View or adjust your basic info.'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Learn the Tabs',
+            style: _commentTextStyle().copyWith(
+              fontSize: 26,
+              color: Colors.purple,
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 300.ms)
+              .slide(begin: const Offset(0, -0.12), curve: Curves.easeOut),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'Check details of each tab',
+            style: _commentTextStyle().copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.purpleAccent,
+            ),
+          )
+              .animate()
+              .fadeIn(delay: 100.ms, duration: 300.ms)
+              .slide(begin: const Offset(0, -0.10), curve: Curves.easeOut),
+
+          const SizedBox(height: 28),
+
+          // Items
+          ...List.generate(items.length, (i) {
+            final itm = items[i];
+            return Padding(
+              padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 22),
+              child: _SmallHeroIcon(
+                tag: itm.$1,
+                icon: itm.$2,
+                label: itm.$3,
+                index: i,
+                description: itm.$4,
+                horizontal: true, // switch layout
+              ),
+            );
+          }),
+
+          const Spacer(),
+
+        ],
+      ),
+    );
+  }
+
 }
 
 class _SmallHeroIcon extends StatelessWidget {
   final String tag;
   final IconData icon;
   final String label;
-  final int index; // for stagger
+  final int index;
+  final String? description;
+  final bool horizontal;
 
   const _SmallHeroIcon({
     required this.tag,
     required this.icon,
     required this.label,
     required this.index,
+    this.description,
+    this.horizontal = false,
   });
 
-  TextStyle get _labelStyle => const TextStyle(
+  TextStyle get _labelStyle => TextStyle(
     fontFamily: 'SourGummy',
     fontWeight: FontWeight.w600,
     fontSize: 11,
-    color: Colors.white70,
+    color: Colors.black.withValues(alpha: 0.8),
   );
 
   @override
   Widget build(BuildContext context) {
     final baseDelay = 120.ms * index;
-    return Hero(
+
+    final iconWidget = Hero(
       tag: tag,
-      child: Column(
+      child: Container(
+        width: horizontal ? 58 : 48,
+        height: horizontal ? 58 : 48,
+        decoration: BoxDecoration(
+          color: Colors.purple.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(horizontal ? 16 : 14),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, size: horizontal ? 30 : 26, color: Colors.white),
+      ),
+    );
+
+    Widget content;
+
+    if (!horizontal) {
+      content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.purple.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white24, width: 1),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 26, color: Colors.white),
-          ),
+          iconWidget,
           const SizedBox(height: 6),
           Text(label, style: _labelStyle),
         ],
-      ),
-    ).animate(delay: baseDelay)
+      );
+    } else {
+      content = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          iconWidget,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                  style: _labelStyle.copyWith(
+                    fontSize: 16,
+                    color: Colors.black,
+                  ),
+                ),
+                if (description != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    description!,
+                    style: _labelStyle.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black.withValues(alpha: 0.7),
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return content
+        .animate(delay: baseDelay)
         .fadeIn(duration: 380.ms, curve: Curves.easeOut)
         .slide(begin: const Offset(0, .25), curve: Curves.easeOut)
         .scale(begin: const Offset(.85, .85), end: const Offset(1, 1), duration: 420.ms);
