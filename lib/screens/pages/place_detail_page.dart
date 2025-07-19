@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../place_service.dart';
 import '../../place_detail_model.dart';
 import '../../place_model.dart';
@@ -29,6 +32,9 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
 
   final TextEditingController _commentController = TextEditingController();
 
+  final _auth = FirebaseAuth.instance;
+  final _fs = FirebaseFirestore.instance;
+
   @override
   void initState() {
     super.initState();
@@ -52,22 +58,60 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     }
   }
 
+  String placeIdFromResource(String rn) => rn.split('/').last;
+
   Future<void> _checkFavorite() async {
-    // TODO Firestore check if place is favorited
-    setState(() => _favorited = false);
+    final user = _auth.currentUser;
+    if (user == null) return; // user not logged in yet
+    final placeId = placeIdFromResource(widget.place.resourceName);
+    final doc = await _fs.collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(placeId)
+        .get();
+    if (!mounted) return;
+    setState(() => _favorited = doc.exists);
   }
 
   Future<void> _toggleFavorite() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to favorite')),
+      );
+      return;
+    }
+    final place = widget.place;
+    final placeId = placeIdFromResource(place.resourceName);
+    final ref = _fs.collection('users').doc(user.uid)
+        .collection('favorites').doc(placeId);
+
     final newVal = !_favorited;
     setState(() => _favorited = newVal);
 
     try {
-      // TODO write / delete favorite to Firestore
+      if (newVal) {
+        await ref.set({
+          'placeId': placeId,
+          'resourceName': place.resourceName,
+          'displayName': place.displayName,
+          'formattedAddress': place.formattedAddress,
+          'primaryPhotoName': place.photoNames.isEmpty ? null : place.photoNames.first,
+          'rating': place.rating,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await ref.delete();
+      }
     } catch (e) {
-      setState(() => _favorited = !newVal);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      // revert
+      if (mounted) {
+        setState(() => _favorited = !newVal);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Favorite failed: $e')),
+        );
+      }
     }
   }
 
