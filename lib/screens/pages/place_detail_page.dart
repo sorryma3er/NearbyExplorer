@@ -738,38 +738,30 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
 
     try {
       await _fs.runTransaction((tx) async {
+        // see if it is a reply, or it has been deleted
         final commentSnap = await tx.get(commentRef);
         if (!commentSnap.exists) return;
 
         final data = commentSnap.data()!;
-        if (data['deleted'] == true) return; // already deleted, nothing to do
+        if (data['deleted'] == true) return; // already deleted
 
         final parentId = data['parentId'];
-        DocumentSnapshot<Map<String, dynamic>>? parentSnap;
-
-        if (parentId != null) {
-          final parentRef = _commentsCol(placeId).doc(parentId);
-          parentSnap = await tx.get(parentRef);
-        }
-
-        // now can write to it
         final now = FieldValue.serverTimestamp();
+
+        // soft delete this comment
         tx.update(commentRef, {
           'deleted': true,
           'text': '',
           'updatedAt': now,
         });
 
-        // if it was a reply, decrement parent.replyCount
-        if (parentId != null && parentSnap != null && parentSnap.exists) {
-          final parentData = parentSnap.data()!;
-          final current = (parentData['replyCount'] as int?) ?? 0;
-          if (current > 0) {
-            tx.update(parentSnap.reference, {
-              'replyCount': current - 1,
-              'updatedAt': now,
-            });
-          }
+        // if it is a reply, decrement parent.replyCount atomically
+        if (parentId != null) {
+          final parentRef = _commentsCol(placeId).doc(parentId);
+          tx.update(parentRef, {
+            'replyCount': FieldValue.increment(-1),
+            'updatedAt': now,
+          });
         }
       });
     } catch (e) {
