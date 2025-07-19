@@ -307,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 boxShadow: selected
                     ? [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.35),
+                    color: Colors.green.withValues(alpha: 0.35),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   )

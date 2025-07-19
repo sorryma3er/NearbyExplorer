@@ -16,6 +16,11 @@ class NotificationsPage extends StatelessWidget {
     required this.apiKey,
   });
 
+  TextStyle _commentTextStyle() => const TextStyle(
+    fontFamily: 'SourGummy',
+    fontWeight: FontWeight.w600,
+  );
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -41,7 +46,7 @@ class NotificationsPage extends StatelessWidget {
         }
         final docs = snap.data?.docs ?? [];
         if (docs.isEmpty) {
-          return const Center(child: Text('No notifications'));
+          return Center(child: Text('No notifications', style: _commentTextStyle()));
         }
 
         return ListView.separated(
@@ -58,7 +63,6 @@ class NotificationsPage extends StatelessWidget {
                 ? data['fromDisplayName'] as String
                 : 'Someone';
             final placeName = data['placeDisplayName'] as String? ?? 'a place';
-            final preview = (data['textPreview'] as String?)?.trim();
             final read = data['read'] == true;
 
             return ListTile(
@@ -71,9 +75,9 @@ class NotificationsPage extends StatelessWidget {
                     ? Text(fromName.characters.first.toUpperCase())
                     : null,
               ),
-              title: Text('$fromName replied to your comment'),
+              title: Text('$fromName replied to your comment', style: _commentTextStyle(),),
               subtitle: Text(
-                'Tap to view it',
+                'Tap to view it', style: _commentTextStyle(),
               ),
               trailing: read ? null : const Icon(Icons.fiber_new, color: Colors.redAccent, size: 18),
               onTap: () async {
