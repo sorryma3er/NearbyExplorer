@@ -49,7 +49,7 @@ class PlaceService {
     final data = json.decode(response.body) as Map<String, dynamic>;
 
     /// placesJson is a list of maps, each map is a real place
-    final placesJson = (data['places'] as List<dynamic>);
+    final placesJson = (data['places'] as List<dynamic>? ?? []); // gracefully prevent error
 
     /// convert each map to a Place model as defined in place_model.dart
     final places = placesJson
