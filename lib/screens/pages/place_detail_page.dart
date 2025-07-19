@@ -130,6 +130,38 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
   CollectionReference<Map<String, dynamic>> _commentsCol(String placeId) =>
       _fs.collection('places').doc(placeId).collection('comments');
 
+  Future<void> _createReplyNotification({
+    required String toUserId,
+    required String parentCommentId,
+    required String replyCommentId,
+    required String placeId,
+    required String placeDisplayName,
+    required User replier,
+    required bool replierAnonymous,
+  }) async {
+    if (toUserId == replier.uid) return; // don't notify self
+
+    final notifRef = _fs
+        .collection('users')
+        .doc(toUserId)
+        .collection('notifications')
+        .doc();
+
+    await notifRef.set({
+      'type': 'reply',
+      'toUserId': toUserId,
+      'fromUserId': replier.uid,
+      'fromDisplayName': replierAnonymous ? '' : (replier.displayName ?? ''),
+      'fromPhotoUrl': replierAnonymous ? null : replier.photoURL,
+      'placeId': placeId,
+      'placeDisplayName': placeDisplayName,
+      'parentCommentId': parentCommentId,
+      'replyCommentId': replyCommentId,
+      'createdAt': FieldValue.serverTimestamp(),
+      'read': false,
+    });
+  }
+
   Future<void> _postComment() async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -145,10 +177,14 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
     final placeId = placeIdFromResource(widget.place.resourceName);
     final isReply = _replyToCommentId != null;
 
+    //store parent data for notification use
+    Map<String, dynamic>? parentData;
+    String? parentId = _replyToCommentId;
+
     // enforce only 2 levels (top-level + one reply level), no 3rd layers reply
-    if (_replyToCommentId != null) {
+    if (_replyToCommentId != null && isReply) {
       final parentSnap = await _commentsCol(placeId).doc(_replyToCommentId!).get();
-      final parentData = parentSnap.data();
+      parentData = parentSnap.data();
       if (parentData == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Original comment no longer exists.')),
@@ -159,6 +195,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
         });
         return;
       }
+
       // if parent itself has a parentId, which means right now is the 3rd layer
       if (parentData['parentId'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -205,6 +242,24 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
         });
       }
       await batch.commit(); // commit to write to it
+
+      if (isReply && parentData != null) {
+        final parentOwnId = parentData['userId'] as String?;
+        if (parentOwnId != null) {
+          // Fire and forget (await if you want strict error handling)
+          _createReplyNotification(
+            toUserId: parentOwnId,
+            parentCommentId: parentId!,
+            replyCommentId: newDoc.id,
+            placeId: placeId,
+            placeDisplayName: widget.place.displayName,
+            replier: user,
+            replierAnonymous: _anonymous,
+          ).catchError((e) {
+            debugPrint('Notification create failed: $e');
+          });
+        }
+      }
 
       // clear composer
       _commentController.clear();

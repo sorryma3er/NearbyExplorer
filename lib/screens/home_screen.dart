@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pages = [
-      const NotificationsPage(),
+      NotificationsPage(placeService: _placeService, apiKey: _apiKey),
       ExplorePage(),
       FavoritesPage(placeService: _placeService, apiKey: _apiKey),
       const ProfilePage(),

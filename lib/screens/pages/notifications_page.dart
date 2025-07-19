@@ -59,10 +59,9 @@ class NotificationsPage extends StatelessWidget {
             final placeName = data['placeDisplayName'] as String? ?? 'a place';
             final preview = (data['textPreview'] as String?)?.trim();
             final read = data['read'] == true;
-            final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
 
             return ListTile(
-              tileColor: read ? null : Colors.amber.withOpacity(0.1),
+              tileColor: read ? null : Colors.amber.withValues(alpha: 0.3),
               leading: CircleAvatar(
                 backgroundImage: (data['fromPhotoUrl'] as String?) != null
                     ? NetworkImage(data['fromPhotoUrl'] as String)

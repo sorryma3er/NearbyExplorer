@@ -116,7 +116,8 @@ class _ExplorePageState extends State<ExplorePage> {
       
       // sort the result by rating highest to lower
       results.sort((a,b) => b.rating.compareTo(a.rating));
-      
+
+      if (!mounted) return;
       setState(() {
         // store the fetched places and update state
         _places = results;
