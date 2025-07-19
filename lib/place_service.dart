@@ -107,27 +107,18 @@ class PlaceService {
   }
 
   Future<PlaceDetail> fetchPlaceDetail(String resourceName) async {
-    // resourceName should look like "places/ChIJxxxxxxxx"
     final url = Uri.parse('https://places.googleapis.com/v1/$resourceName');
 
     final headers = {
       'X-Goog-Api-Key': _apiKey,
-      // OPTION 1: Header field mask
+
+      // Header field mask no space, o/w bug!
       'X-Goog-FieldMask': 'name,displayName,formattedAddress,location,rating,userRatingCount,photos,reviews',
       'Content-Type': 'application/json',
     };
 
-    debugPrint('[PlaceDetail] GET $url');
-    debugPrint('[PlaceDetail] headers: $headers');
-
     final resp = await http.get(url, headers: headers);
 
-    debugPrint('[PlaceDetail] status: ${resp.statusCode}');
-    debugPrint('[PlaceDetail] body: ${resp.body}');
-
-    if (resp.statusCode == 404) {
-      throw Exception('Detail failed: 404 (resource not found) resourceName=$resourceName');
-    }
     if (resp.statusCode != 200) {
       throw Exception('Detail failed: ${resp.statusCode} body=${resp.body}');
     }

@@ -262,52 +262,93 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
   Widget _appCommentsSection() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(),
-          const SizedBox(height: 12),
-          _commentInput(),
-          const SizedBox(height: 16),
-          _commentsStreamList(),
-        ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.15), // whole background of app own comment
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader(),
+
+            const SizedBox(height: 16),
+
+            _commentInput(),
+
+            const SizedBox(height: 12),
+
+            Divider(
+              height: 28,
+              thickness: 1,
+              color: Colors.amber.withValues(alpha: 0.4),
+            ),
+
+            _commentsStreamList(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _sectionHeader() {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.amber, width: 1.5),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.amber.withValues(alpha: 0.3),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.amber),
-              const SizedBox(width: 6),
-              Text('Community Comments',
-                  style: TextStyle(
-                      color: Colors.amber.shade700, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-        const Spacer(),
+        _communityPill(),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Anonymous'),
+            Text('Anonymous', style: _commentTextStyle()),
+            const SizedBox(width: 4),
             Switch(
               value: _anonymous,
               onChanged: (v) => setState(() => _anonymous = v),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ],
-        )
+        ),
       ],
     );
   }
+
+  Widget _communityPill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.amber, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.amber.withValues(alpha: 0.25),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 16, color: Colors.red.withValues(alpha: 0.8)),
+
+          const SizedBox(width: 6),
+
+          Text(
+            'Community Comments',
+            style: TextStyle(
+              color: Colors.amber.shade700,
+              fontFamily: 'SourGummy',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  TextStyle _commentTextStyle() => const TextStyle(
+    fontFamily: 'SourGummy',
+    fontWeight: FontWeight.w600,
+  );
 
   Widget _commentInput() {
     return Row(
@@ -332,6 +373,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
                 minLines: 1,
                 decoration: InputDecoration(
                   hintText: 'Give ur opinion...',
+                  hintStyle: _commentTextStyle(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -353,7 +395,7 @@ class _PlaceDetailSheetState extends State<PlaceDetailSheet> {
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Post'),
+                      : Text('Post', style: _commentTextStyle()),
                 ),
               ),
             ],
